@@ -33,7 +33,7 @@ private var isColorOutputCapable: Bool = {
 
 public func colorize(_ text: String, _ color: ANSIColor) -> String {
     guard isColorOutputCapable else { return text }
-    return "\(color.rawValue)\(text)\u{001B}[0;0m"
+    return text
 }
 
 public final class BaseLogger {

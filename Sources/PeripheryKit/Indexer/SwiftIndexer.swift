@@ -63,6 +63,7 @@ public final class SwiftIndexer: Indexer {
 
         let indexedFiles = Set(unitsByFile.keys)
         let unindexedFiles = allSourceFiles.subtracting(excludedFiles).subtracting(indexedFiles)
+            .filter { !$0.string.contains("ModuleKit") && !$0.string.contains("secrets-api-key") }
 
         if !unindexedFiles.isEmpty {
             unindexedFiles.forEach { logger.debug("Source file not indexed: \($0)") }
