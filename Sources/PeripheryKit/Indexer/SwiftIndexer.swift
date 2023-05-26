@@ -63,7 +63,22 @@ public final class SwiftIndexer: Indexer {
 
         let indexedFiles = Set(unitsByFile.keys)
         let unindexedFiles = allSourceFiles.subtracting(excludedFiles).subtracting(indexedFiles)
-            .filter { !$0.string.contains("ModuleKit") && !$0.string.contains("secrets-api-key") }
+            .filter {
+                !$0.string.contains("ModuleKit") &&
+                !$0.string.contains("secrets-api-key") &&
+                !$0.string.contains("RxCocoa") &&
+                !$0.string.contains("Atlantis") &&
+                !$0.string.contains("LocalizationKit") &&
+                !$0.string.contains("SQLiteMigrationManager.swift") &&
+                !$0.string.contains("SociableWeaver") &&
+                !$0.string.contains("TPTweak") &&
+                !$0.string.contains("TextureSwiftSupport") &&
+                !$0.string.contains("ARMakeUp") &&
+                !$0.string.contains("GRDB.swift") &&
+                !$0.string.contains("IntentDefinitions") &&
+                !$0.ends(with: .init("GQL.generated.swift")) &&
+                !$0.ends(with: .init("backup-keychain-key-api-key.swift"))
+            }
 
         if !unindexedFiles.isEmpty {
             unindexedFiles.forEach { logger.debug("Source file not indexed: \($0)") }
