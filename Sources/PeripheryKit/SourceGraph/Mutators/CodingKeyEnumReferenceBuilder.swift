@@ -17,11 +17,16 @@ final class CodingKeyEnumReferenceBuilder: SourceGraphMutator {
                 $0.kind == .protocol && $0.name == "CodingKey"
             }
 
-            let isParentCodable = graph.inheritedTypeReferences(of: parent).contains {
-                [.protocol, .typealias].contains($0.kind) && ["Codable", "Decodable", "Encodable"].contains($0.name)
+            guard isCodingKey else { continue }
+
+            // Retain each enum element.
+            for elem in enumDeclaration.declarations {
+                guard elem.kind == .enumelement else { continue }
+                graph.markRetained(elem)
             }
 
-            if isCodingKey && isParentCodable {
+            if graph.isCodable(parent) {
+                // Build a reference from the Codable type to the CodingKey enum.
                 for usr in enumDeclaration.usrs {
                     let newReference = Reference(kind: .enum, usr: usr, location: enumDeclaration.location)
                     newReference.name = enumDeclaration.name

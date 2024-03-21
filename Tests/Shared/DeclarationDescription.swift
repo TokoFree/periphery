@@ -1,5 +1,5 @@
 import Foundation
-import PeripheryKit
+@testable import PeripheryKit
 
 struct DeclarationDescription: CustomStringConvertible {
     let kind: Declaration.Kind
@@ -70,12 +70,12 @@ struct DeclarationDescription: CustomStringConvertible {
         self.init(kind: .functionDestructor, name: name, line: line)
     }
 
-    static func varStatic(_ name: String, line: Int? = nil) -> Self {
-        self.init(kind: .varStatic, name: name, line: line)
+    static func functionSubscript(_ name: String, line: Int? = nil) -> Self {
+        self.init(kind: .functionSubscript, name: name, line: line)
     }
 
-    static func varGlobal(_ name: String, line: Int? = nil) -> Self {
-        self.init(kind: .varGlobal, name: name, line: line)
+    static func varStatic(_ name: String, line: Int? = nil) -> Self {
+        self.init(kind: .varStatic, name: name, line: line)
     }
 
     static func varClass(_ name: String, line: Int? = nil) -> Self {

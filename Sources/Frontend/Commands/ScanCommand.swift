@@ -24,28 +24,31 @@ struct ScanCommand: FrontendCommand {
     @Option(help: "Path to your project's .xcodeproj - supply this option if your project doesn't have an .xcworkspace. Xcode projects only")
     var project: String?
 
-    @Option(parsing: .upToNextOption, help: "Path to file targets mapping. For use with third-party build systems. Multiple paths may be specified")
+    @Option(parsing: .upToNextOption, help: "File target mapping configuration file paths. For use with third-party build systems")
     var fileTargetsPath: [FilePath] = defaultConfiguration.$fileTargetsPath.defaultValue
 
-    @Option(help: "Comma-separated list of schemes that must be built in order to produce the targets passed to the --targets option. Xcode projects only", transform: split(by: ","))
+    @Option(parsing: .upToNextOption, help: "Schemes that must be built in order to produce the targets passed to the --targets option. Xcode projects only")
     var schemes: [String] = defaultConfiguration.$schemes.defaultValue
 
-    @Option(help: "Comma-separated list of target names to scan. Required for Xcode projects. Optional for Swift Package Manager projects, default behavior is to scan all targets defined in Package.swift", transform: split(by: ","))
+    @Option(parsing: .upToNextOption, help: "Target names to scan. Required for Xcode projects. Optional for Swift Package Manager projects, default behavior is to scan all targets defined in Package.swift")
     var targets: [String] = defaultConfiguration.$targets.defaultValue
 
     @Option(help: "Output format (allowed: \(OutputFormat.allValueStrings.joined(separator: ", ")))")
     var format: OutputFormat = defaultConfiguration.$outputFormat.defaultValue
 
-    @Option(help: "Path glob of source files to exclude from indexing. Declarations and references within these files will not be considered during analysis. Multiple globs may be delimited by a pipe", transform: split(by: "|"))
+    @Option(parsing: .upToNextOption, help: "Source file globs to exclude from indexing. Declarations and references within these files will not be considered during analysis")
     var indexExclude: [String] = defaultConfiguration.$indexExclude.defaultValue
 
-    @Option(help: "Path glob of source files to exclude from the results. Note that this option is purely cosmetic, these files will still be indexed. Multiple globs may be delimited by a pipe", transform: split(by: "|"))
+    @Option(parsing: .upToNextOption, help: "Source file globs to exclude from the results. Note that this option is purely cosmetic, these files will still be indexed")
     var reportExclude: [String] = defaultConfiguration.$reportExclude.defaultValue
 
-    @Option(help: "Path glob of source files to include in the results. This option supersedes '--report-exclude'. Note that this option is purely cosmetic, these files will still be indexed. Multiple globs may be delimited by a pipe", transform: split(by: "|"))
+    @Option(parsing: .upToNextOption, help: "Source file globs to include in the results. This option supersedes '--report-exclude'. Note that this option is purely cosmetic, these files will still be indexed")
     var reportInclude: [String] = defaultConfiguration.$reportInclude.defaultValue
 
-    @Option(parsing: .upToNextOption, help: "Path to the index store. Multiple paths may be specified. Implies '--skip-build'")
+    @Option(parsing: .upToNextOption, help: "Source file globs for which all containing declarations will be retained")
+    var retainFiles: [String] = defaultConfiguration.$retainFiles.defaultValue
+
+    @Option(parsing: .upToNextOption, help: "Index store paths. Implies '--skip-build'")
     var indexStorePath: [FilePath] = defaultConfiguration.$indexStorePath.defaultValue
 
     @Flag(help: "Retain all public declarations, recommended for framework/library projects")
@@ -54,14 +57,20 @@ struct ScanCommand: FrontendCommand {
     @Flag(help: "Disable identification of redundant public accessibility")
     var disableRedundantPublicAnalysis: Bool = defaultConfiguration.$disableRedundantPublicAnalysis.defaultValue
 
+    @Flag(help: "Enable identification of unused imports (experimental)")
+    var enableUnusedImportAnalysis: Bool = defaultConfiguration.$enableUnusedImportsAnalysis.defaultValue
+
     @Flag(help: "Retain properties that are assigned, but never used")
     var retainAssignOnlyProperties: Bool = defaultConfiguration.$retainAssignOnlyProperties.defaultValue
 
-    @Option(help: "Comma-separated list of property types to retain if the property is assigned, but never read", transform: split(by: ","))
+    @Option(parsing: .upToNextOption, help: "Property types to retain if the property is assigned, but never read")
     var retainAssignOnlyPropertyTypes: [String] = defaultConfiguration.$retainAssignOnlyPropertyTypes.defaultValue
 
-    @Option(help: "Comma-separated list of external protocols that inherit Encodable. Properties of types conforming to these protocols will be retained", transform: split(by: ","))
+    @Option(parsing: .upToNextOption, help: .private)
     var externalEncodableProtocols: [String] = defaultConfiguration.$externalEncodableProtocols.defaultValue
+
+    @Option(parsing: .upToNextOption, help: "Names of external protocols that inherit Codable. Properties and CodingKey enums of types conforming to these protocols will be retained")
+    var externalCodableProtocols: [String] = defaultConfiguration.$externalCodableProtocols.defaultValue
 
     @Option(parsing: .upToNextOption, help: "Names of XCTestCase subclasses that reside in external targets")
     var externalTestCaseClasses: [String] = defaultConfiguration.$externalTestCaseClasses.defaultValue
@@ -69,14 +78,29 @@ struct ScanCommand: FrontendCommand {
     @Flag(help: "Retain declarations that are exposed to Objective-C implicitly by inheriting NSObject classes, or explicitly with the @objc and @objcMembers attributes")
     var retainObjcAccessible: Bool = defaultConfiguration.$retainObjcAccessible.defaultValue
 
+    @Flag(help: "Retain declarations that are exposed to Objective-C explicitly with the @objc and @objcMembers attributes")
+    var retainObjcAnnotated: Bool = defaultConfiguration.$retainObjcAnnotated.defaultValue
+
     @Flag(help: "Retain unused protocol function parameters, even if the parameter is unused in all conforming functions")
     var retainUnusedProtocolFuncParams: Bool = defaultConfiguration.$retainUnusedProtocolFuncParams.defaultValue
+
+    @Flag(help: "Retain SwiftUI previews")
+    var retainSwiftUIPreviews: Bool = defaultConfiguration.$retainSwiftUIPreviews.defaultValue
+
+    @Flag(help: "Retain properties on Codable types")
+    var retainCodableProperties: Bool = defaultConfiguration.$retainCodableProperties.defaultValue
+
+    @Flag(help: "Automatically remove code that can be done so safely without introducing build errors (experimental)")
+    var autoRemove: Bool = defaultConfiguration.$autoRemove.defaultValue
 
     @Flag(help: "Clean existing build artifacts before building")
     var cleanBuild: Bool = defaultConfiguration.$cleanBuild.defaultValue
 
     @Flag(help: "Skip the project build step")
     var skipBuild: Bool = defaultConfiguration.$skipBuild.defaultValue
+
+    @Flag(help: "Output result paths relative to the current directory")
+    var relativeResults: Bool = defaultConfiguration.$relativeResults.defaultValue
 
     @Flag(help: "Exit with non-zero status if any unused code is found")
     var strict: Bool = defaultConfiguration.$strict.defaultValue
@@ -99,6 +123,10 @@ struct ScanCommand: FrontendCommand {
             try scanBehavior.setup(config).get()
         }
 
+        if !externalEncodableProtocols.isEmpty {
+            Logger().warn("The option '--external-encodable-protocols' is deprecated, use '--external-codable-protocols' instead.")
+        }
+
         let configuration = Configuration.shared
         configuration.guidedSetup = setup
         configuration.apply(\.$workspace, workspace)
@@ -110,14 +138,20 @@ struct ScanCommand: FrontendCommand {
         configuration.apply(\.$reportExclude, reportExclude)
         configuration.apply(\.$reportInclude, reportInclude)
         configuration.apply(\.$outputFormat, format)
+        configuration.apply(\.$retainFiles, retainFiles)
         configuration.apply(\.$retainPublic, retainPublic)
         configuration.apply(\.$retainAssignOnlyProperties, retainAssignOnlyProperties)
         configuration.apply(\.$retainAssignOnlyPropertyTypes, retainAssignOnlyPropertyTypes)
         configuration.apply(\.$retainObjcAccessible, retainObjcAccessible)
+        configuration.apply(\.$retainObjcAnnotated, retainObjcAnnotated)
         configuration.apply(\.$retainUnusedProtocolFuncParams, retainUnusedProtocolFuncParams)
+        configuration.apply(\.$retainSwiftUIPreviews, retainSwiftUIPreviews)
         configuration.apply(\.$disableRedundantPublicAnalysis, disableRedundantPublicAnalysis)
+        configuration.apply(\.$enableUnusedImportsAnalysis, enableUnusedImportAnalysis)
         configuration.apply(\.$externalEncodableProtocols, externalEncodableProtocols)
+        configuration.apply(\.$externalCodableProtocols, externalCodableProtocols)
         configuration.apply(\.$externalTestCaseClasses, externalTestCaseClasses)
+        configuration.apply(\.$autoRemove, autoRemove)
         configuration.apply(\.$verbose, verbose)
         configuration.apply(\.$quiet, quiet)
         configuration.apply(\.$disableUpdateCheck, disableUpdateCheck)
@@ -126,16 +160,12 @@ struct ScanCommand: FrontendCommand {
         configuration.apply(\.$skipBuild, skipBuild)
         configuration.apply(\.$cleanBuild, cleanBuild)
         configuration.apply(\.$buildArguments, buildArguments)
+        configuration.apply(\.$relativeResults, relativeResults)
+        configuration.apply(\.$retainCodableProperties, retainCodableProperties)
 
         try scanBehavior.main { project in
             try Scan().perform(project: project)
         }.get()
-    }
-
-    // MARK: - Private
-
-    private static func split(by delimiter: Character) -> (String?) -> [String] {
-        return { options in options?.split(separator: delimiter).map(String.init) ?? [] }
     }
 }
 

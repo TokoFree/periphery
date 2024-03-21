@@ -2,23 +2,20 @@ import Foundation
 import XCTest
 import Shared
 @testable import XcodeSupport
-@testable import PeripheryKit
 
 class XcodebuildBuildProjectTest: XCTestCase {
-    var shell: Shell!
     var xcodebuild: Xcodebuild!
     var project: XcodeProject!
 
     override func setUp() {
         super.setUp()
 
-        shell = Shell.shared
-        xcodebuild = Xcodebuild(shell: shell)
+        xcodebuild = Xcodebuild(shell: .shared)
         project = try! XcodeProject(path: UIKitProjectPath)
     }
 
     func testBuildSchemeWithWhitespace() throws {
-        let scheme = try XcodeScheme(project: project, name: "Scheme With Spaces")
+        let scheme = "Scheme With Spaces"
         try xcodebuild.build(project: project, scheme: scheme, allSchemes: [scheme])
     }
 }

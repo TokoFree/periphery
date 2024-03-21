@@ -1,5 +1,6 @@
 import Foundation
 import SwiftSyntax
+import SystemPackage
 
 final class UnusedParameterAnalyzer {
     private enum UsageType {
@@ -112,7 +113,7 @@ final class UnusedParameterAnalyzer {
             }
         case let item as Identifier:
             return item.name == param.name ? .used : .unused
-        case let item as GenericItem where item.node.is(TupleExprElementListSyntax.self): // function call arguments
+        case let item as GenericItem where item.node.is(LabeledExprListSyntax.self): // function call arguments
             for item in item.items {
                 if isParam(param, usedIn: item) {
                     return .used

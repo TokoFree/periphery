@@ -1,14 +1,17 @@
 import Foundation
 
-public class SourceLocation {
-    public let file: SourceFile
-    public let line: Int64
-    public let column: Int64
+class SourceLocation {
+    let file: SourceFile
+    let line: Int
+    let column: Int
 
-    init(file: SourceFile, line: Int64, column: Int64) {
+    private let hashValueCache: Int
+
+    init(file: SourceFile, line: Int, column: Int) {
         self.file = file
         self.line = line
         self.column = column
+        self.hashValueCache = [file.hashValue, line, column].hashValue
     }
 
     // MARK: - Private
@@ -27,25 +30,20 @@ public class SourceLocation {
 }
 
 extension SourceLocation: Equatable {
-    public static func == (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
-        let fileIsEqual = lhs.file == rhs.file
-        let lineIsEqual = lhs.line == rhs.line
-        let columnIsEqual = lhs.column == rhs.column
-
-        return fileIsEqual && lineIsEqual && columnIsEqual
+    static func == (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
+        lhs.file == rhs.file && lhs.line == rhs.line && lhs.column == rhs.column
     }
 }
 
 extension SourceLocation: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(file)
-        hasher.combine(line)
-        hasher.combine(column)
+    func hash(into hasher: inout Hasher) {
+
+        hasher.combine(hashValueCache)
     }
 }
 
 extension SourceLocation: CustomStringConvertible {
-    public var description: String {
+    var description: String {
         return descriptionInternal
     }
 
@@ -55,7 +53,7 @@ extension SourceLocation: CustomStringConvertible {
 }
 
 extension SourceLocation: Comparable {
-    public static func < (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
+    static func < (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
         if lhs.file == rhs.file {
             if lhs.line == rhs.line {
                 return lhs.column < rhs.column

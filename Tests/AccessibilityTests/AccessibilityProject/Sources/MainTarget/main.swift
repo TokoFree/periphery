@@ -6,8 +6,6 @@ PublicExtensionOnRedundantPublicKindRetainer().retain()
 IgnoreCommentCommandRetainer().retain()
 IgnoreAllCommentCommandRetainer().retain()
 
-_ = PublicTypeUsedAsPublicPropertyTypeRetainer().retain
-
 _ = PublicTypeUsedAsPublicInitializerParameterTypeRetainer()
 
 _ = PublicTypeUsedAsPublicSubscriptParameterTypeRetainer()[]
@@ -16,6 +14,8 @@ _ = PublicTypeUsedAsPublicSubscriptReturnTypeRetainer()[]
 PublicTypeUsedAsPublicFunctionParameterTypeRetainer().retain1()
 PublicTypeUsedAsPublicFunctionParameterTypeRetainer().retain2()
 PublicTypeUsedAsPublicFunctionParameterTypeRetainer().retain3()
+
+PublicTypeUsedAsPublicFunctionParameterDefaultValueRetainer().somePublicFunc()
 
 _ = PublicTypeUsedAsPublicFunctionReturnTypeRetainer().retain1()
 _ = PublicTypeUsedAsPublicFunctionReturnTypeRetainer().retain2()
@@ -31,6 +31,12 @@ _ = PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnTypeRetainer
 
 _ = NotRedundantPublicTestableImportClass().testableProperty
 
+ProtocolIndirectlyReferencedCrossModuleByExtensionMemberImpl().somePublicFunc()
+
+// Properties
+_ = PublicTypeUsedAsPublicPropertyTypeRetainer().retain
+_ = PublicTypeUsedAsPublicPropertyInitializer().retain
+
 // Typealias
 let _: PublicTypealiasWithClosureType? = nil
 
@@ -40,10 +46,12 @@ case let .someCase(a, b):
     _ = a.value
     _ = b.value
 }
+_ = PublicEnumCaseWithParameter.someCase(param1: nil, param2: nil)
 
 // Inheritance
 _ = PublicClassInheritingPublicClass()
 _ = PublicClassInheritingPublicExternalClassRetainer()
+_ = PublicClassInheritingPublicClassWithGenericParameter()
 
 // Conformance
 _ = PublicClassAdoptingPublicProtocol()
@@ -57,3 +65,17 @@ _ = InternalProtocolRefiningPublicProtocolRetainer()
 // Closure
 let _ = PublicTypeUsedInPublicClosureRetainer().closure
 
+// Async
+Task {
+    await PublicActor().someFunc()
+}
+
+// Property wrappers
+_ = PublicWrappedProperty().wrappedProperty
+
+// Inlining
+inlinableFunction()
+
+// Associated types
+_ = PublicInheritedAssociatedTypeClass().items
+_ = PublicInheritedAssociatedTypeDefaultTypeClass().items

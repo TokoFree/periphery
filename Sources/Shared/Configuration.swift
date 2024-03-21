@@ -47,11 +47,20 @@ public final class Configuration {
     @Setting(key: "external_encodable_protocols", defaultValue: [])
     public var externalEncodableProtocols: [String]
 
+    @Setting(key: "external_codable_protocols", defaultValue: [])
+    public var externalCodableProtocols: [String]
+
     @Setting(key: "external_test_case_classes", defaultValue: [])
     public var externalTestCaseClasses: [String]
 
     @Setting(key: "retain_objc_accessible", defaultValue: false)
     public var retainObjcAccessible: Bool
+
+    @Setting(key: "retain_objc_annotated", defaultValue: false)
+    public var retainObjcAnnotated: Bool
+
+    @Setting(key: "retain_files", defaultValue: [])
+    public var retainFiles: [String]
 
     @Setting(key: "retain_public", defaultValue: false)
     public var retainPublic: Bool
@@ -62,8 +71,20 @@ public final class Configuration {
     @Setting(key: "retain_unused_protocol_func_params", defaultValue: false)
     public var retainUnusedProtocolFuncParams: Bool
 
+    @Setting(key: "retain_swift_ui_previews", defaultValue: false)
+    public var retainSwiftUIPreviews: Bool
+
     @Setting(key: "disable_redundant_public_analysis", defaultValue: false)
     public var disableRedundantPublicAnalysis: Bool
+
+    @Setting(key: "enable_unused_import_analysis", defaultValue: false)
+    public var enableUnusedImportsAnalysis: Bool
+
+    @Setting(key: "retain_codable_properties", defaultValue: false)
+    public var retainCodableProperties: Bool
+
+    @Setting(key: "auto_remove", defaultValue: false)
+    public var autoRemove: Bool
 
     @Setting(key: "verbose", defaultValue: false)
     public var verbose: Bool
@@ -86,8 +107,12 @@ public final class Configuration {
     @Setting(key: "clean_build", defaultValue: false)
     public var cleanBuild: Bool
 
+    @Setting(key: "relative_results", defaultValue: false)
+    public var relativeResults: Bool
+
     // Non user facing.
     public var guidedSetup: Bool = false
+    public var removalOutputBasePath: FilePath?
 
     // Dependencies.
     private var logger: BaseLogger // Must use BaseLogger as Logger depends upon Configuration.
@@ -135,8 +160,16 @@ public final class Configuration {
             config[$retainObjcAccessible.key] = retainObjcAccessible
         }
 
+        if $retainObjcAnnotated.hasNonDefaultValue {
+            config[$retainObjcAnnotated.key] = retainObjcAnnotated
+        }
+        
         if $retainPublic.hasNonDefaultValue {
             config[$retainPublic.key] = retainPublic
+        }
+
+        if $retainFiles.hasNonDefaultValue {
+            config[$retainFiles.key] = retainFiles
         }
 
         if $retainAssignOnlyProperties.hasNonDefaultValue {
@@ -151,6 +184,10 @@ public final class Configuration {
             config[$externalEncodableProtocols.key] = externalEncodableProtocols
         }
 
+        if $externalCodableProtocols.hasNonDefaultValue {
+            config[$externalCodableProtocols.key] = externalCodableProtocols
+        }
+
         if $externalTestCaseClasses.hasNonDefaultValue {
             config[$externalTestCaseClasses.key] = externalTestCaseClasses
         }
@@ -159,8 +196,20 @@ public final class Configuration {
             config[$retainUnusedProtocolFuncParams.key] = retainUnusedProtocolFuncParams
         }
 
+        if $retainSwiftUIPreviews.hasNonDefaultValue {
+            config[$retainSwiftUIPreviews.key] = retainSwiftUIPreviews
+        }
+
         if $disableRedundantPublicAnalysis.hasNonDefaultValue {
             config[$disableRedundantPublicAnalysis.key] = disableRedundantPublicAnalysis
+        }
+
+        if $enableUnusedImportsAnalysis.hasNonDefaultValue {
+            config[$enableUnusedImportsAnalysis.key] = enableUnusedImportsAnalysis
+        }
+
+        if $autoRemove.hasNonDefaultValue {
+            config[$autoRemove.key] = autoRemove
         }
 
         if $verbose.hasNonDefaultValue {
@@ -193,6 +242,14 @@ public final class Configuration {
 
         if $buildArguments.hasNonDefaultValue {
             config[$buildArguments.key] = buildArguments
+        }
+
+        if $relativeResults.hasNonDefaultValue {
+            config[$relativeResults.key] = relativeResults
+        }
+
+        if $retainCodableProperties.hasNonDefaultValue {
+            config[$retainCodableProperties.key] = retainCodableProperties
         }
 
         return try Yams.dump(object: config)
@@ -231,20 +288,35 @@ public final class Configuration {
                 $outputFormat.assign(value)
             case $retainPublic.key:
                 $retainPublic.assign(value)
+            case $retainFiles.key:
+                $retainFiles.assign(value)
             case $retainAssignOnlyProperties.key:
                 $retainAssignOnlyProperties.assign(value)
             case $retainAssignOnlyPropertyTypes.key:
                 $retainAssignOnlyPropertyTypes.assign(value)
             case $externalEncodableProtocols.key:
+                if !externalEncodableProtocols.isEmpty {
+                    logger.warn("The option '--external-encodable-protocols' is deprecated, use '--external-codable-protocols' instead.")
+                }
                 $externalEncodableProtocols.assign(value)
+            case $externalCodableProtocols.key:
+                $externalCodableProtocols.assign(value)
             case $externalTestCaseClasses.key:
                 $externalTestCaseClasses.assign(value)
             case $retainObjcAccessible.key:
                 $retainObjcAccessible.assign(value)
+            case $retainObjcAnnotated.key:
+                $retainObjcAnnotated.assign(value)
             case $retainUnusedProtocolFuncParams.key:
                 $retainUnusedProtocolFuncParams.assign(value)
+            case $retainSwiftUIPreviews.key:
+                $retainSwiftUIPreviews.assign(value)
             case $disableRedundantPublicAnalysis.key:
                 $disableRedundantPublicAnalysis.assign(value)
+            case $enableUnusedImportsAnalysis.key:
+                $enableUnusedImportsAnalysis.assign(value)
+            case $autoRemove.key:
+                $autoRemove.assign(value)
             case $verbose.key:
                 $verbose.assign(value)
             case $quiet.key:
@@ -261,6 +333,10 @@ public final class Configuration {
                 $cleanBuild.assign(value)
             case $buildArguments.key:
                 $buildArguments.assign(value)
+            case $relativeResults.key:
+                $relativeResults.assign(value)
+            case $retainCodableProperties.key:
+                $retainCodableProperties.assign(value)
             default:
                 logger.warn("\(path.string): invalid key '\(key)'")
             }
@@ -278,12 +354,18 @@ public final class Configuration {
         $reportInclude.reset()
         $outputFormat.reset()
         $retainPublic.reset()
+        $retainFiles.reset()
         $retainAssignOnlyProperties.reset()
         $retainAssignOnlyPropertyTypes.reset()
         $retainObjcAccessible.reset()
+        $retainObjcAnnotated.reset()
         $retainUnusedProtocolFuncParams.reset()
+        $retainSwiftUIPreviews.reset()
         $disableRedundantPublicAnalysis.reset()
+        $enableUnusedImportsAnalysis.reset()
+        $autoRemove.reset()
         $externalEncodableProtocols.reset()
+        $externalCodableProtocols.reset()
         $externalTestCaseClasses.reset()
         $verbose.reset()
         $quiet.reset()
@@ -293,6 +375,8 @@ public final class Configuration {
         $skipBuild.reset()
         $cleanBuild.reset()
         $buildArguments.reset()
+        $relativeResults.reset()
+        $retainCodableProperties.reset()
     }
 
     // MARK: - Helpers
@@ -316,8 +400,20 @@ public final class Configuration {
         return matchers
     }
 
-    public func resetIndexExcludeMatchers() {
+    private var _retainFilesMatchers: [FilenameMatcher]?
+    public var retainFilesMatchers: [FilenameMatcher] {
+        if let _retainFilesMatchers {
+            return _retainFilesMatchers
+        }
+
+        let matchers = buildFilenameMatchers(with: retainFiles)
+        _retainFilesMatchers = matchers
+        return matchers
+    }
+
+    public func resetMatchers() {
         _indexExcludeMatchers = nil
+        _retainFilesMatchers = nil
     }
 
     public lazy var reportExcludeMatchers: [FilenameMatcher] = {

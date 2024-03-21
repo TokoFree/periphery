@@ -1,5 +1,6 @@
 import SystemPackage
 @testable import PeripheryKit
+import XCTest
 
 class FixtureSourceGraphTestCase: SourceGraphTestCase {
     class override func setUp() {
@@ -7,16 +8,27 @@ class FixtureSourceGraphTestCase: SourceGraphTestCase {
         _sourceFiles = nil
     }
 
+    @discardableResult
     func analyze(retainPublic: Bool = false,
                  retainObjcAccessible: Bool = false,
+                 retainObjcAnnotated: Bool = false,
+                 disableRedundantPublicAnalysis: Bool = false,
                  testBlock: () throws -> Void
-    ) rethrows {
+    ) rethrows -> [ScanResult] {
         configuration.retainPublic = retainPublic
         configuration.retainObjcAccessible = retainObjcAccessible
+        configuration.retainObjcAnnotated = retainObjcAnnotated
+        configuration.disableRedundantPublicAnalysis = disableRedundantPublicAnalysis
         configuration.indexExclude = Self.sourceFiles.subtracting([testFixturePath]).map { $0.string }
-        configuration.resetIndexExcludeMatchers()
+        configuration.resetMatchers()
+
+        if !testFixturePath.exists {
+            fatalError("\(testFixturePath.string) does not exist")
+        }
+
         Self.index()
         try testBlock()
+        return Self.results
     }
 
     // MARK: - Private

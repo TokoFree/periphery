@@ -34,7 +34,11 @@ final class RedundantExplicitPublicAccessibilityMarker: SourceGraphMutator {
     private func validate(_ decl: Declaration) throws {
         // Check if the declaration is public, and is referenced cross module.
         if decl.accessibility.isExplicitly(.public) {
-            if try !isReferencedCrossModule(decl) && !isExposedPubliclyByAnotherDeclaration(decl) && !graph.isRetained(decl) {
+            if !graph.isRetained(decl) &&
+                !isReferencedCrossModule(decl) &&
+                !isExposedPubliclyByAnotherDeclaration(decl) &&
+                !isProtocolIndirectlyReferencedCrossModuleByExtensionMember(decl)
+            {
                 // Public accessibility is redundant.
                 mark(decl)
                 markExplicitPublicDescendentDeclarations(from: decl)
@@ -103,27 +107,66 @@ final class RedundantExplicitPublicAccessibilityMarker: SourceGraphMutator {
                     }
 
                     return $0.parent
+                } else if decl.attributes.contains("propertyWrapper") {
+                    return $0.parent
+                } else if let parent = $0.parent, parent.attributes.contains("inlinable") {
+                    // Declarations referenced within a public @inlinable function must either be
+                    // public or @useableFromInline.
+                    return parent
                 }
 
                 return nil
             }
 
-        return referenceDecls.contains { refDecl in
-            refDecl.accessibility.value == .public || refDecl.accessibility.value == .open
-        }
+        return referenceDecls.contains { $0.accessibility.isAccessibleCrossModule }
     }
 
-    private func isReferencedCrossModule(_ decl: Declaration) throws -> Bool {
-        let referenceModules = try nonTestableModulesReferencing(decl)
+    /// A public protocol that is not directly referenced cross-module may still be exposed by a public member declared
+    /// within an extension that is accessed on a conforming type.
+    ///
+    ///     // TargetA
+    ///     public protocol MyProtocol {}
+    ///     public extension MyProtocol {
+    ///         func someExtensionFunc() {}
+    ///     }
+    ///     public class MyClass: MyProtocol {}
+    ///
+    ///     // TargetB
+    ///     let cls = MyClass()
+    ///     cls.someExtensionFunc()
+    ///
+    private func isProtocolIndirectlyReferencedCrossModuleByExtensionMember(_ decl: Declaration) -> Bool {
+        guard decl.kind == .protocol else { return false }
+
+        return graph.references(to: decl)
+            .lazy
+            .compactMap { ref -> Declaration? in
+                guard let parent = ref.parent else { return nil }
+
+                if parent.kind == .extensionProtocol && parent.name == decl.name {
+                    return parent
+                }
+
+                return nil
+            }
+            .contains {
+                $0.declarations.contains {
+                    $0.accessibility.value == .public && isReferencedCrossModule($0)
+                }
+            }
+    }
+
+    private func isReferencedCrossModule(_ decl: Declaration) -> Bool {
+        let referenceModules = nonTestableModulesReferencing(decl)
         return !referenceModules.subtracting(decl.location.file.modules).isEmpty
     }
 
-    private func nonTestableModulesReferencing(_ decl: Declaration) throws -> Set<String> {
-        let referenceFiles = Set(graph.references(to: decl).map { $0.location.file })
+    private func nonTestableModulesReferencing(_ decl: Declaration) -> Set<String> {
+        let referenceFiles = graph.references(to: decl).map { $0.location.file }
 
-        let referenceModules = referenceFiles.flatMap { file -> Set<String> in
-            let importsDeclModuleTestable = file.importStatements.contains(where: { (parts, isTestable) in
-                isTestable && !Set(parts).isDisjoint(with: decl.location.file.modules)
+        let referenceModules = referenceFiles.flatMapSet { file -> Set<String> in
+            let importsDeclModuleTestable = file.importStatements.contains(where: {
+                $0.isTestable && decl.location.file.modules.contains($0.module)
             })
 
             if !importsDeclModuleTestable {
@@ -133,11 +176,11 @@ final class RedundantExplicitPublicAccessibilityMarker: SourceGraphMutator {
             return []
         }
 
-        return Set(referenceModules)
+        return referenceModules
     }
 
     private func descendentPublicDeclarations(from decl: Declaration) -> Set<Declaration> {
         let publicDeclarations = decl.declarations.filter { !$0.isImplicit && $0.accessibility.isExplicitly(.public) }
-        return Set(publicDeclarations.flatMap { descendentPublicDeclarations(from: $0) }).union(publicDeclarations)
+        return publicDeclarations.flatMapSet { descendentPublicDeclarations(from: $0) }.union(publicDeclarations)
     }
 }

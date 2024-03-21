@@ -12,8 +12,8 @@
   <img src="https://img.shields.io/github/release/peripheryapp/periphery.svg?color=008DFF" />
 </a>
 <img src="https://img.shields.io/badge/platform-macOS%20|%20Linux-008DFF">
-<a href="https://github.com/peripheryapp/periphery/actions">
-  <img src="https://img.shields.io/github/actions/workflow/status/peripheryapp/periphery/test.yml?branch=master">
+<a href="#sponsors-">
+<img src="https://img.shields.io/github/sponsors/peripheryapp?logo=githubsponsors&color=db61a2">
 </a>
 <br>
 <br>
@@ -25,14 +25,15 @@
 - [How To Use](#how-to-use)
 - [How It Works](#how-it-works)
 - [Analysis](#analysis)
-  - [Function Parameters](#function-parameters)
-  - [Protocols](#protocols-1)
-  - [Enumerations](#enumerations)
-  - [Assign-only Properties](#assign-only-properties)
-  - [Redundant Public Accessibility](#redundant-public-accessibility)
-  - [Objective-C](#objective-c)
-  - [Encodable](#encodable)
-  - [XCTestCase](#xctestcase)
+    - [Function Parameters](#function-parameters)
+    - [Protocols](#protocols-1)
+    - [Enumerations](#enumerations)
+    - [Assign-only Properties](#assign-only-properties)
+    - [Redundant Public Accessibility](#redundant-public-accessibility)
+    - [Objective-C](#objective-c)
+    - [Encodable](#encodable)
+    - [XCTestCase](#xctestcase)
+    - [Interface Builder](#interface-builder)
 - [Comment Commands](#comment-commands)
 - [Xcode Integration](#xcode-integration)
 - [Excluding Files](#excluding-files)
@@ -41,46 +42,27 @@
 - [Platforms](#platforms)
 - [Troubleshooting](#troubleshooting)
 - [Known Bugs](#known-bugs)
+- [Sponsors](#sponsors-) ![Sponsors](assets/sponsor.svg)
 
 ## Installation
 
-### [Homebrew](https://brew.sh/) (macOS only)
+### [Homebrew](https://brew.sh/)
 
-Install Homebrew:
-
-> You can skip this step if you already have Homebrew installed.
-
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Now install Periphery itself:
-
-```
+```sh
 brew install peripheryapp/periphery/periphery
 ```
 
-### [Swift Package Manager](https://swift.org/package-manager/)
+### [Mint](https://github.com/yonaskolb/mint)
 
-Add Periphery to your `Package.swift` dependencies:
-
-```swift
-.package(url: "https://github.com/peripheryapp/periphery", from: "2.0.0")
+```sh
+mint install peripheryapp/periphery
 ```
 
-Now run periphery via Swift:
-
-```
-swift run periphery scan ...
-```
-
-> SwiftPM does not yet support prebuilt binaries, therefore be aware that Periphery will be built from source. This also means that Periphery will be built using the same build configuration you specify to build your entire project (the default is 'debug'). Debug builds of Periphery are significantly slower than release builds.
-
-### [CocoaPods](https://cocoapods.org/) (macOS only)
+### [CocoaPods](https://cocoapods.org/)
 
 Add the following to your Podfile:
 
-```
+```ruby
 pod 'Periphery'
 ```
 
@@ -92,7 +74,7 @@ Now run `pod install`, the Periphery executable will be downloaded and placed at
 
 The scan command is Periphery's primary function. To begin a guided setup, simply change to your project directory and run:
 
-```
+```sh
 periphery scan --setup
 ```
 
@@ -305,15 +287,17 @@ class MyClass {
 ```
 
 In some cases this may be the intended behavior, therefore you have a few options available to silence such results:
-* Retain individual properties using [Comment Commands](#comment-commands).
-* Retain all assign-only properties by their type with `--retain-assign-only-property-types`. Given types must match their exact usage in the property declaration (sans optional question mark), e.g `String`, `[String]`, `Set<String>`. Periphery is unable to resolve inferred property types, therefore in some instances you may need to add explicit type annotations to your properties.
-* Disable assign-only property analysis entirely with `--retain-assign-only-properties`.
+
+- Retain individual properties using [Comment Commands](#comment-commands).
+- Retain all assign-only properties by their type with `--retain-assign-only-property-types`. Given types must match their exact usage in the property declaration (sans optional question mark), e.g `String`, `[String]`, `Set<String>`. Periphery is unable to resolve inferred property types, therefore in some instances you may need to add explicit type annotations to your properties.
+- Disable assign-only property analysis entirely with `--retain-assign-only-properties`.
 
 ### Redundant Public Accessibility
 
 Declarations that are marked `public` yet are not referenced from outside their home module, are identified as having redundant public accessibility. In this scenario, the `public` annotation can be removed from the declaration. Removing redundant public accessibility has a couple of benefits:
-* It helps reduce the public surface area of your modules.
-* In [Whole Module Compilation](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#whole-module-optimizations-wmo) mode, Swift can infer `final` by [automatically discovering](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#advice-if-wmo-is-enabled-use-internal-when-a-declaration-does-not-need-to-be-accessed-outside-of-module) all potentially overriding declarations. `final` classes are [better optimized](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#advice-use-final-when-you-know-the-declaration-does-not-need-to-be-overridden) by the compiler.
+
+- It helps reduce the public surface area of your modules.
+- In [Whole Module Compilation](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#whole-module-optimizations-wmo) mode, Swift can infer `final` by [automatically discovering](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#advice-if-wmo-is-enabled-use-internal-when-a-declaration-does-not-need-to-be-accessed-outside-of-module) all potentially overriding declarations. `final` classes are [better optimized](https://github.com/apple/swift/blob/main/docs/OptimizationTips.rst#advice-use-final-when-you-know-the-declaration-does-not-need-to-be-overridden) by the compiler.
 
 This analysis can be disabled with `--disable-redundant-public-analysis`.
 
@@ -321,7 +305,9 @@ This analysis can be disabled with `--disable-redundant-public-analysis`.
 
 Periphery cannot analyze Objective-C code since types may be dynamically typed.
 
-By default Periphery does not assume that declarations accessible by the Objective-C runtime are in use. If your project is a mix of Swift & Objective-C, you can enable this behavior with the `--retain-objc-accessible` option. Swift declarations that are accessible by the Objective-C runtime are those that are explicitly attributed with `@objc` or `@objcMembers`, and classes that inherit `NSObject` either directly or indirectly via another class.
+By default Periphery does not assume that declarations accessible by the Objective-C runtime are in use. If your project is a mix of Swift & Objective-C, you can enable this behavior with the `--retain-objc-accessible` option. Swift declarations that are accessible by the Objective-C runtime are those that are explicitly annotated with `@objc` or `@objcMembers`, and classes that inherit `NSObject` either directly or indirectly via another class.
+
+Alternatively, the `--retain-objc-annotated` can be used to only retain declarations that are explicitly annotated with `@objc` or `@objcMembers`. Types that inherit `NSObject` are not retained unless they have the explicit annotations. This option may uncover more unused code, but with the caveat that some of the results may be incorrect if the declaration is in fact used in Objective-C code. To resolve these incorrect results you must add an `@objc` annotation to the declaration.
 
 ### Encodable
 
@@ -334,11 +320,15 @@ struct SomeStruct: Encodable {
 let data = try JSONEncoder().encode(SomeStruct(someProperty: "value"))
 ```
 
-This property retention behavior is automatic, even when `Encodable` conformance is inherited via another protocol. However, if a protocol that inherits `Encodable` is declared in an external module that Periphery has not analyzed, it cannot detect the inheritance of `Encodable`. In this situation you can use the `--external-encodable-protocols` option enable this behavior for the given protocols.
+This property retention behavior is automatic, even when `Encodable` conformance is inherited via another protocol. However, if a protocol that inherits `Encodable` is declared in an external module that Periphery has not analyzed, it cannot detect the inheritance of `Encodable`. In this situation you can use the `--external-encodable-protocols` option to enable this behavior for the given protocols.
 
 ### XCTestCase
 
 Any class that inherits `XCTestCase` is automatically retained along with its test methods. However, when a class inherits `XCTestCase` indirectly via another class, e.g `UnitTestCase`, and that class resides in a target that isn't scanned by Periphery, you need to use the `--external-test-case-classes UnitTestCase` option to instruct Periphery to treat `UnitTestCase` as an `XCTestCase` subclass.
+
+### Interface Builder
+
+If your project contains Interface Builder files (such as storyboards and XIBs), Periphery will take these into account when identifying unused declarations. However, Periphery currently only identifies unused classes. This limitation exists because Periphery does not yet fully parse Interface Builder files (see [issue #212](https://github.com/peripheryapp/periphery/issues/212)). Due to Periphery's design principle of avoiding false positives, it is assumed that if a class is referenced in an Interface Builder file, all of its `IBOutlets` and `IBActions` are used, even if they might not be in reality. This approach will be revised to accurately identify unused `IBActions` and `IBOutlets` once Periphery gains the capability to parse Interface Builder files.
 
 ## Comment Commands
 
@@ -415,6 +405,10 @@ To exclude the results from certain files, pass the `--report-exclude <globs>` o
 
 To exclude files from being indexed, pass the `--index-exclude <globs>` option to the `scan` command. Excluding files from the index phase means that any declarations and references contained within the files will not be seen by Periphery. Periphery will be behave as if the files do not exist. For example, this option can be used to exclude generated code that holds references to non-generated code, or exclude all `.xib` and `.storyboard` files that hold references to code.
 
+### Retaining File Declarations
+
+To retain all declarations in files, pass the `--retain-files <globs>` option to the `scan` command. This option is equivalent to adding a `// periphery:ignore:all` comment command at the top of each file.
+
 ## Continuous Integration
 
 When integrating Periphery into a CI pipeline, you can potentially skip the build phase if your pipeline has already done so, e.g to run tests. This can be achieved using the `--skip-build` option. However, you also need to tell Periphery the location of the index store using `--index-store-path`. This location is dependent on your project type.
@@ -435,7 +429,7 @@ Periphery can analyze projects using third-party build systems such as Bazel, th
 
 A file-target mapping file contains a simple mapping of source files to build targets. You will need to generate this file yourself using the appropriate tooling for your build system. The format is as follows:
 
-```
+```json
 {
   "file_targets": {
     "path/to/file_a.swift": ["TargetA"],
@@ -450,9 +444,9 @@ A file-target mapping file contains a simple mapping of source files to build ta
 
 You can then invoke periphery as follows:
 
-```
+```sh
 periphery scan --file-targets-path map.json --index-store-path index/store
-``` 
+```
 
 > **Tip**
 >
@@ -488,9 +482,10 @@ struct BuildInfo {
 ```
 
 You've a few options to workaround this:
- - Use [Comment Commands](#comment-commands) to explicitly ignore `releaseName`.
- - Filter the results to remove known instances.
- - Run Periphery once for each build configuration and merge the results. You can pass arguments to the underlying build by specifying them after `--`, e.g `periphery scan ... -- -configuration release`.
+
+- Use [Comment Commands](#comment-commands) to explicitly ignore `releaseName`.
+- Filter the results to remove known instances.
+- Run Periphery once for each build configuration and merge the results. You can pass arguments to the underlying build by specifying them after `--`, e.g `periphery scan ... -- -configuration release`.
 
 ### Swift package is platform-specific
 
@@ -500,7 +495,7 @@ As a workaround, you can manually build the Swift package with `xcodebuild` and 
 
 Example:
 
-```bash
+```sh
 # 1. use xcodebuild
 xcodebuild -scheme MyScheme -destination 'platform=iOS Simulator,OS=16.2,name=iPhone 14' -derivedDataPath '../dd' clean build
 
@@ -514,10 +509,27 @@ Due to some underlying bugs in Swift, Periphery may in some instances report inc
 
 | ID    | Title |
 | :---  | :---  |
-| [61509](https://github.com/apple/swift/issues/61509) | Shorthand optional binding has no reference to original variable |
 | [56559](https://github.com/apple/swift/issues/56559) | Index store does not relate constructor referenced via Self |
 | [56541](https://github.com/apple/swift/issues/56541) | Index store does not relate static property getter used as subscript key |
 | [56327](https://github.com/apple/swift/issues/56327) | Index store does not relate objc optional protocol method implemented in subclass |
 | [56189](https://github.com/apple/swift/issues/56189) | Index store should relate appendInterpolation from string literals |
 | [56165](https://github.com/apple/swift/issues/56165) | Index store does not relate constructor via literal notation |
 | [49641](https://github.com/apple/swift/issues/49641) | Index does not include reference to constructor of class/struct with generic types |
+
+## Sponsors ![Sponsors](assets/sponsor-20.svg)
+
+Periphery is passion project that takes a huge amount of effort to maintain and develop. If you find Periphery useful, please consider sponsoring through [GitHub Sponsors](https://github.com/sponsors/peripheryapp).
+
+Special thanks goes to the following generous sponsors:
+
+### Emerge Tools
+
+[Emerge Tools](https://www.emergetools.com) is a suite of revolutionary products designed to supercharge mobile apps and the teams that build them.
+
+<a href="https://www.emergetools.com" alt="Emerge Tools">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://github.com/peripheryapp/periphery/raw/master/assets/sponsors/emerge-tools-vertical-white.svg">
+        <source media="(prefers-color-scheme: light)" srcset="https://github.com/peripheryapp/periphery/raw/master/assets/sponsors/emerge-tools-vertical-black.svg">
+        <img src="https://github.com/peripheryapp/periphery/raw/master/assets/sponsors/emerge-tools-vertical-black.svg">
+    </picture>
+</a>

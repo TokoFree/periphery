@@ -4,7 +4,9 @@ import AEXML
 import Shared
 
 final class InfoPlistParser {
-    private static let elements = ["UISceneClassName", "UISceneDelegateClassName", "NSExtensionPrincipalClass"]
+    private static let elements = [
+        "UISceneClassName", "UISceneDelegateClassName", "NSPrincipalClass",
+        "NSExtensionPrincipalClass", "CLKComplicationPrincipalClass", "WKExtensionDelegateClassName"]
     private let path: FilePath
 
     required init(path: FilePath) {

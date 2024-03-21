@@ -12,6 +12,143 @@
 
 - None.
 
+## 2.18.0 (2024-01-21)
+
+##### Breaking
+
+- The command-line parsing strategy for options that were delimited by a pipe or comma has changed. These options are now parsed as a space delimited list, e.g `--option "arg1" "arg2"`.
+- The option `--external-encodable-protocols` is deprecated, use `--external-codable-protocols` instead.
+
+##### Enhancements
+
+- Add experimental unused import analysis option `--enable-unused-import-analysis`.
+- Add experimental automatic code removal option `--auto-remove`.
+- Assign-only properties on structs with synthesized initializers are now detected.
+- Added the `--retain-codable-properties` option to retain all properties on Codable types.
+- Results for redundant protocol conformances will now list the inherited protocols that should replace the redundant conformance, if any.
+- Added the `--retain-files` option to retain all declarations within the given files.
+
+##### Bug Fixes
+
+- Subscript functions required by `@dynamicMemberLookup` are now retained.
+- A newline is no longer printed before non-Xcode formatted results.
+- `--external-codable-protocols` now retains enums that conform to `CodingKey`.
+- Fix public accessibility false-positive for actors.
+- Fix public accessibility false-positive for property wrappers.
+- Fix public accessibility false-positive for declarations referenced from a public `@inlinable` function.
+- Fix public accessibility false-positive for function parameter default values.
+- Fix public accessibility false-positive for inherited and default associated types.
+- Fix public accessibility false-positive for generic types used in the generic argument clause of a return type.
+- Fix public accessibility false-positive for retained/ignored declarations.
+- Fix public accessibility false-positive for enum case parameter types.
+- Fix public accessibility false-positive for properties initialized with generic specialized types.
+- Types associated with assign-only properties are no longer identified as unused until the property is removed.
+- Classes referenced in Info.plist as `NSPrincipalClass` and `WKExtensionDelegateClassName` are now retained.
+
+## 2.17.1 (2023-12-04)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- Add support for indexing plist files via the generic `--file-targets-path` option.
+
+##### Bug Fixes
+
+- None.
+
+## 2.17.0 (2023-11-23)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- Added the `--relative-results` option to output result paths relative to the current directory.
+- `--quiet` now silences warnings too.
+
+##### Bug Fixes
+
+- Fix redundant public accessibility analysis for protocol members declared in extensions that are referenced cross-module where the protocol itself is not.
+- Remove checks causing errors when scanning multi-platform projects.
+- Additional arguments passed through to xcodebuild/swift are now quoted automatically as needed.
+
+## 2.16.0 (2023-09-27)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- SwiftUI previews (`PreviewProvider`) are no longer retained by default. Retain them with `--retain-swift-ui-previews`.
+
+##### Bug Fixes
+
+- Fix retaining members of public generic protocol extensions with `--retain-public`.
+
+## 2.15.1 (2023-09-17)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- Swift 5.9 support.
+
+##### Bug Fixes
+
+- Path forward slashes in JSON output formats are no longer escaped.
+- `INDEX_ENABLE_DATA_STORE` is now forcefully enabled as it's required for indexing in some cases.
+
+## 2.15.0 (2023-07-04)
+
+##### Breaking
+
+- Swift 5.7 and macOS 12 are no longer supported.
+
+##### Enhancements
+
+- Reduced indexing and analysis runtime by ~60%.
+
+##### Bug Fixes
+
+- Fix indexing multi-platform projects such as those containing watchOS extensions.
+- Subclasses of CLKComplicationPrincipalClass referenced from an Info.plist are now retained.
+
+## 2.14.1 (2023-06-25)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- None.
+
+##### Bug Fixes
+
+- Revert SwiftPM binary command plugin. Sorry folks, but SwiftPM doesn't provide the appropriate permissions for Periphery to build projects in the sandbox.
+
+## 2.14.0 (2023-06-24)
+
+##### Breaking
+
+- None.
+
+##### Enhancements
+
+- Add the `--retain-objc-annotated` option.
+- Added support for SwiftPM binary command plugin.
+
+##### Bug Fixes
+
+- None.
+
 ## 2.13.0 (2023-05-14)
 
 ##### Breaking
@@ -88,7 +225,7 @@
 
 ##### Enhancements
 
-- Add CodeClimate output formatter available via the `--format codeclimate` option. 
+- Add CodeClimate output formatter available via the `--format codeclimate` option.
 - Add support for third-party build systems, such as Bazel.
 
 ##### Bug Fixes
@@ -634,7 +771,7 @@
 - Properties named in struct implicit constructors are now retained.
 - Implicit declarations such as struct constructors are now retained.
 - A `typealias` that defines an `associatedtype` in an external protocol is now retained.
-- All custom `appendInterpolation` methods are now retained, as they cannot be identified as unused due to https://bugs.swift.org/browse/SR-13792.
+- All custom `appendInterpolation` methods are now retained, as they cannot be identified as unused due to https://github.com/apple/swift/issues/56189
 - Fixed path resolution for nested projects in Xcode workspaces.
 - `wrappedValue` and `projectedValue` properties in property wrappers are now retained.
 - `XCTestManifests.swift` is now treated as an entry point file like `LinuxMain.swift`.

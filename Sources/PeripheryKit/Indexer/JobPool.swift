@@ -23,7 +23,7 @@ struct JobPool<T> {
         }
     }
 
-    func map<R>(_ block: @escaping (T) throws -> R) throws -> [R] {
+    func flatMap<R>(_ block: @escaping (T) throws -> [R]) throws -> [R] {
         var error: Error?
         var results: [R] = []
         let lock = UnfairLock()
@@ -36,7 +36,7 @@ struct JobPool<T> {
                 let result = try block(job)
 
                 lock.perform {
-                    results.append(result)
+                    results.append(contentsOf: result)
                 }
             } catch let e {
                 error = e

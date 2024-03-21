@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.8
 import PackageDescription
 
 var dependencies: [Package.Dependency] = [
@@ -6,15 +6,14 @@ var dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
     .package(url: "https://github.com/tadija/AEXML", from: "4.0.0"),
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
-    .package(url: "https://github.com/ileitch/swift-indexstore", from: "9.0.0"),
-    .package(url: "https://github.com/peripheryapp/swift-syntax", .exact("1.0.1")),
-    .package(url: "https://github.com/ileitch/swift-filename-matcher", from: "0.0.0")
+    .package(url: "https://github.com/ileitch/swift-indexstore", from: "9.0.4"),
+    .package(url: "https://github.com/apple/swift-syntax", from: "509.1.0"),
+    .package(url: "https://github.com/ileitch/swift-filename-matcher", from: "0.0.0"),
 ]
 
 #if os(macOS)
 dependencies.append(
     .package(
-        name: "XcodeProj",
         url: "https://github.com/tuist/xcodeproj",
         from: "8.0.0"
     )
@@ -44,7 +43,7 @@ var targets: [PackageDescription.Target] = [
             .product(name: "SystemPackage", package: "swift-system"),
             .product(name: "AEXML", package: "AEXML"),
             .product(name: "SwiftSyntax", package: "swift-syntax"),
-            .product(name: "SwiftSyntaxParser", package: "swift-syntax"),
+            .product(name: "SwiftParser", package: "swift-syntax"),
             .product(name: "SwiftIndexStore", package: "swift-indexstore"),
             .product(name: "FilenameMatcher", package: "swift-filename-matcher")
         ]
@@ -87,8 +86,15 @@ var targets: [PackageDescription.Target] = [
         path: "Tests/Fixtures/RetentionFixtures"
     ),
     .target(
+        name: "RemovalFixtures",
+        path: "Tests/Fixtures/RemovalFixtures"
+    ),
+    .target(
         name: "UnusedParameterFixtures",
-        path: "Tests/Fixtures/UnusedParameterFixtures"
+        path: "Tests/Fixtures/UnusedParameterFixtures",
+        swiftSettings: [
+            .unsafeFlags(["-suppress-warnings"]) // Suppress warnings from testLocalVariableAssignment
+        ]
     ),
     .target(
         name: "TypeSyntaxInspectorFixtures",
@@ -120,7 +126,7 @@ var targets: [PackageDescription.Target] = [
             .target(name: "PeripheryKit")
         ],
         exclude: ["AccessibilityProject"]
-    )
+    ),
 ]
 
 #if os(macOS)
@@ -134,8 +140,12 @@ targets.append(contentsOf: [
         ]
     ),
     .target(
-        name: "ObjcRetentionFixtures",
-        path: "Tests/Fixtures/ObjcRetentionFixtures"
+        name: "ObjcAccessibleRetentionFixtures",
+        path: "Tests/Fixtures/ObjcAccessibleRetentionFixtures"
+    ),
+    .target(
+        name: "ObjcAnnotatedRetentionFixtures",
+        path: "Tests/Fixtures/ObjcAnnotatedRetentionFixtures"
     ),
     .testTarget(
         name: "XcodeTests",
@@ -151,9 +161,9 @@ targets.append(contentsOf: [
 
 let package = Package(
     name: "Periphery",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "periphery", targets: ["Frontend"])
+        .executable(name: "periphery", targets: ["Frontend"]),
     ],
     dependencies: dependencies,
     targets: targets,

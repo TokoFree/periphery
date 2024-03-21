@@ -1,19 +1,21 @@
-public final class Reference {
-    public enum Role {
+final class Reference {
+    enum Role {
         case varType
         case returnType
         case parameterType
         case genericParameterType
         case genericRequirementType
-        case inheritedClassType
+        case inheritedType
         case refinedProtocolType
+        case conformedType
+        case initializerType
         case variableInitFunctionCall
         case functionCallMetatypeArgument
         case unknown
 
         var isPubliclyExposable: Bool {
             switch self {
-            case .varType, .returnType, .parameterType, .genericParameterType, .genericRequirementType, .inheritedClassType, .refinedProtocolType, .variableInitFunctionCall, .functionCallMetatypeArgument:
+            case .varType, .returnType, .parameterType, .genericParameterType, .genericRequirementType, .inheritedType, .refinedProtocolType, .initializerType, .variableInitFunctionCall, .functionCallMetatypeArgument:
                 return true
             default:
                 return false
@@ -21,113 +23,44 @@ public final class Reference {
         }
     }
 
-    public enum Kind: String {
-        case `associatedtype` = "associatedtype"
-        case `class` = "class"
-        case `enum` = "enum"
-        case enumelement = "enumelement"
-        case `extension` = "extension"
-        case extensionClass = "extension.class"
-        case extensionEnum = "extension.enum"
-        case extensionProtocol = "extension.protocol"
-        case extensionStruct = "extension.struct"
-        case functionAccessorAddress = "function.accessor.address"
-        case functionAccessorDidset = "function.accessor.didset"
-        case functionAccessorGetter = "function.accessor.getter"
-        case functionAccessorMutableaddress = "function.accessor.mutableaddress"
-        case functionAccessorSetter = "function.accessor.setter"
-        case functionAccessorWillset = "function.accessor.willset"
-        case functionConstructor = "function.constructor"
-        case functionDestructor = "function.destructor"
-        case functionFree = "function.free"
-        case functionMethodClass = "function.method.class"
-        case functionMethodInstance = "function.method.instance"
-        case functionMethodStatic = "function.method.static"
-        case functionOperator = "function.operator"
-        case functionOperatorInfix = "function.operator.infix"
-        case functionOperatorPostfix = "function.operator.postfix"
-        case functionOperatorPrefix = "function.operator.prefix"
-        case functionSubscript = "function.subscript"
-        case genericTypeParam = "generic_type_param"
-        case module = "module"
-        case precedenceGroup = "precedencegroup"
-        case `protocol` = "protocol"
-        case `struct` = "struct"
-        case `typealias` = "typealias"
-        case varClass = "var.class"
-        case varGlobal = "var.global"
-        case varInstance = "var.instance"
-        case varLocal = "var.local"
-        case varParameter = "var.parameter"
-        case varStatic = "var.static"
+    let location: SourceLocation
+    let kind: Declaration.Kind
+    let isRelated: Bool
+    var name: String?
+    var parent: Declaration?
+    var references: Set<Reference> = []
+    let usr: String
+    var role: Role = .unknown
 
-        static var protocolMemberKinds: [Kind] {
-            let functionKinds: [Kind] = [.functionMethodInstance, .functionMethodStatic, .functionSubscript, .functionOperator, .functionOperatorInfix, .functionOperatorPostfix, .functionOperatorPrefix, .functionConstructor]
-            let variableKinds: [Kind] = [.varInstance, .varStatic]
-            return functionKinds + variableKinds
-        }
+    private let hashValueCache: Int
 
-        static var protocolMemberConformingKinds: [Kind] {
-            // Protocols cannot declare 'class' members, yet classes can fulfill the requirement with either a 'class'
-            // or 'static' member.
-            protocolMemberKinds + [.varClass, .functionMethodClass, .associatedtype]
-        }
-
-        var isProtocolMemberKind: Bool {
-            Self.protocolMemberKinds.contains(self)
-        }
-
-        var isProtocolMemberConformingKind: Bool {
-            Self.protocolMemberConformingKinds.contains(self)
-        }
-
-        var isFunctionKind: Bool {
-            rawValue.hasPrefix("function")
-        }
-
-        var declarationEquivalent: Declaration.Kind? {
-            Declaration.Kind(rawValue: rawValue)
-        }
-    }
-
-    public let location: SourceLocation
-    public let kind: Kind
-    public let isRelated: Bool
-    public var name: String?
-    public var parent: Declaration?
-    public var references: Set<Reference> = []
-    public let usr: String
-    public var role: Role = .unknown
-
-    private let identifier: String
-
-    init(kind: Kind, usr: String, location: SourceLocation, isRelated: Bool = false) {
+    init(kind: Declaration.Kind, usr: String, location: SourceLocation, isRelated: Bool = false) {
         self.kind = kind
         self.usr = usr
         self.isRelated = isRelated
         self.location = location
-        self.identifier = "\(usr.hashValue)-\(location.hashValue)-\(isRelated.hashValue)"
+        self.hashValueCache = [usr.hashValue, location.hashValue, isRelated.hashValue].hashValue
     }
 
     var descendentReferences: Set<Reference> {
-        Set(references.flatMap { $0.descendentReferences }).union(references)
+        references.flatMapSet { $0.descendentReferences }.union(references)
     }
 }
 
 extension Reference: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(identifier)
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(hashValueCache)
     }
 }
 
 extension Reference: Equatable {
-    public static func == (lhs: Reference, rhs: Reference) -> Bool {
-        lhs.identifier == rhs.identifier
+    static func == (lhs: Reference, rhs: Reference) -> Bool {
+        lhs.usr == rhs.usr && lhs.location == rhs.location && lhs.isRelated == rhs.isRelated
     }
 }
 
 extension Reference: CustomStringConvertible {
-    public var description: String {
+    var description: String {
         let referenceType = isRelated ? "Related" : "Reference"
 
         return "\(referenceType)(\(descriptionParts.joined(separator: ", ")))"
@@ -141,7 +74,7 @@ extension Reference: CustomStringConvertible {
 }
 
 extension Reference: Comparable {
-    public static func < (lhs: Reference, rhs: Reference) -> Bool {
+    static func < (lhs: Reference, rhs: Reference) -> Bool {
         lhs.location < rhs.location
     }
 }

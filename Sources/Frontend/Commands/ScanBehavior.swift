@@ -61,11 +61,19 @@ final class ScanBehavior {
 
         do {
             results = try block(project)
-            let interval = logger.beginInterval("scan:result:output")
+            let interval = logger.beginInterval("result:output")
             let filteredResults = OutputDeclarationFilter().filter(results)
-            let sortedResults = filteredResults.sorted { $0.declaration < $1.declaration }
-            let output = try configuration.outputFormat.formatter.init().format(sortedResults)
-            logger.info("", canQuiet: true)
+
+            if configuration.autoRemove {
+                try ScanResultRemover().remove(results: filteredResults)
+            }
+
+            let output = try configuration.outputFormat.formatter.init(configuration: configuration).format(filteredResults)
+
+            if configuration.outputFormat.supportsAuxiliaryOutput {
+                logger.info("", canQuiet: true)
+            }
+
             logger.info(output, canQuiet: false)
             logger.endInterval(interval)
 

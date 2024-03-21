@@ -1,8 +1,6 @@
 import XCTest
-import Shared
 @testable import TestShared
 @testable import XcodeSupport
-@testable import PeripheryKit
 
 class UIKitProjectTest: SourceGraphTestCase {
     override static func setUp() {
@@ -10,7 +8,9 @@ class UIKitProjectTest: SourceGraphTestCase {
 
         configuration.project = UIKitProjectPath.string
         configuration.schemes = ["UIKitProject"]
-        configuration.targets = ["UIKitProject", "NotificationServiceExtension", "UIKitProjectTests", "LocalPackage.LocalPackageTarget", "LocalPackage.LocalPackageTargetTests"]
+        configuration.targets = ["UIKitProject", "NotificationServiceExtension", "WatchWidgetExtension",
+                                 "UIKitProjectTests", "LocalPackage.LocalPackageTarget",
+                                 "LocalPackage.LocalPackageTargetTests"]
 
         build(driver: XcodeProjectDriver.self)
         index()

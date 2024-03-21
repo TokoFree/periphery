@@ -1,5 +1,4 @@
 import XCTest
-import Shared
 @testable import TestShared
 @testable import PeripheryKit
 
@@ -47,6 +46,13 @@ class RedundantPublicAccessibilityTest: SourceGraphTestCase {
         assertNotRedundantPublicAccessibility(.class("PublicTypeUsedAsPublicPropertyArrayType"))
     }
 
+    func testPublicTypeUsedAsPublicPropertyInitializer() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.struct("PublicTypeUsedAsPublicPropertyInitializer_Simple"))
+        assertNotRedundantPublicAccessibility(.struct("PublicTypeUsedAsPublicPropertyInitializer_GenericParameter"))
+    }
+
     func testPublicTypeUsedAsPublicInitializerParameterType() {
         Self.index()
 
@@ -59,6 +65,14 @@ class RedundantPublicAccessibilityTest: SourceGraphTestCase {
         assertNotRedundantPublicAccessibility(.class("PublicTypeUsedAsPublicFunctionParameterType"))
         assertNotRedundantPublicAccessibility(.class("PublicTypeUsedAsPublicFunctionParameterTypeClosureArgument"))
         assertNotRedundantPublicAccessibility(.class("PublicTypeUsedAsPublicFunctionParameterTypeClosureReturnType"))
+    }
+
+    func testPublicTypeUsedAsPublicFunctionParameterDefaultValue() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.struct("PublicTypeUsedAsPublicFunctionParameterDefaultValue")) {
+            self.assertNotRedundantPublicAccessibility(.varStatic("somePublicValue"))
+        }
     }
 
     func testPublicTypeUsedAsPublicFunctionReturnType() {
@@ -98,6 +112,14 @@ class RedundantPublicAccessibilityTest: SourceGraphTestCase {
         Self.index()
 
         assertRedundantPublicAccessibility(.class("PublicClassInheritingPublicExternalClass"))
+    }
+
+    func testPublicClassInheritingPublicClassWithGenericRequirement() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.struct("PublicClassInheritingPublicClassWithGenericParameter_GenericType"))
+        assertNotRedundantPublicAccessibility(.class("PublicClassInheritingPublicClassWithGenericParameter_Superclass"))
+        assertNotRedundantPublicAccessibility(.class("PublicClassInheritingPublicClassWithGenericParameter"))
     }
 
     func testPublicClassAdoptingPublicProtocol() {
@@ -197,6 +219,16 @@ class RedundantPublicAccessibilityTest: SourceGraphTestCase {
         }
     }
 
+    func testEnumCaseWithParameter() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.class("PublicEnumCaseWithParameter_ParameterType"))
+        assertNotRedundantPublicAccessibility(.class("PublicEnumCaseWithParameter_ParameterType_Outer")) {
+            self.assertNotRedundantPublicAccessibility(.class("Inner"))
+        }
+        assertNotRedundantPublicAccessibility(.enum("PublicEnumCaseWithParameter"))
+    }
+
     func testTypealiasWithClosureType() {
         Self.index()
 
@@ -225,8 +257,79 @@ class RedundantPublicAccessibilityTest: SourceGraphTestCase {
         assertNotRedundantPublicAccessibility(.protocol("PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnType10_1"))
         assertNotRedundantPublicAccessibility(.protocol("PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnType10_2"))
         assertNotRedundantPublicAccessibility(.protocol("PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnType10_3"))
+        assertNotRedundantPublicAccessibility(.protocol("PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnType11"))
 
         // Destructured binding control.
         assertRedundantPublicAccessibility(.protocol("PublicTypeUsedAsPublicFunctionMetatypeParameterWithGenericReturnType4"))
+    }
+
+    /// A public protocol that is not directly referenced cross-module may still be exposed by a public member declared
+    /// within an extension that is accessed on a conforming type.
+    ///
+    ///     // TargetA
+    ///     public protocol MyProtocol {}
+    ///     public extension MyProtocol {
+    ///         func someExtensionFunc() {}
+    ///     }
+    ///     public class MyClass: MyProtocol {}
+    ///
+    ///     // TargetB
+    ///     let cls = MyClass()
+    ///     cls.someExtensionFunc()
+    ///
+    func testPublicProtocolIndirectlyReferencedByExtensionMember() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.protocol("ProtocolIndirectlyReferencedCrossModuleByExtensionMember"))
+        assertNotRedundantPublicAccessibility(.extensionProtocol("ProtocolIndirectlyReferencedCrossModuleByExtensionMember")) {
+            self.assertNotRedundantPublicAccessibility(.functionMethodInstance("somePublicFunc()"))
+        }
+    }
+
+    func testPublicActor() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.class("PublicActor")) {
+            self.assertNotRedundantPublicAccessibility(.functionMethodInstance("someFunc()"))
+        }
+    }
+
+    func testPublicWrappedProperty() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.struct("PublicWrapper")) {
+            self.assertNotRedundantPublicAccessibility(.varInstance("wrappedValue"))
+            self.assertNotRedundantPublicAccessibility(.functionConstructor("init(wrappedValue:)"))
+        }
+
+        assertNotRedundantPublicAccessibility(.struct("PublicWrappedProperty")) {
+            self.assertNotRedundantPublicAccessibility(.varInstance("wrappedProperty"))
+        }
+    }
+
+    func testPublicInlinableFunction() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.class("ClassReferencedFromPublicInlinableFunction"))
+        assertNotRedundantPublicAccessibility(.class("ClassReferencedFromPublicInlinableFunction_UsableFromInline"))
+    }
+
+    func testPublicInheritedAssociatedType() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.protocol("PublicInheritedAssociatedType"))
+    }
+
+    func testPublicAssociatedTypeDefaultType() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.protocol("PublicInheritedAssociatedTypeDefaultType"))
+    }
+
+    func testPublicComparableOperatorFunction() {
+        Self.index()
+
+        assertNotRedundantPublicAccessibility(.functionOperatorInfix("<(_:_:)"))
+        assertNotRedundantPublicAccessibility(.functionOperatorInfix("==(_:_:)"))
     }
 }
